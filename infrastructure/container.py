@@ -71,6 +71,7 @@ class Container:
             verify_uc=self.verify_uc,
             list_uc=self.list_uc,
             download_uc=self.download_uc,
+            hasher=hasher,
             verifier_html=VERIFIER_HTML,
         )
 

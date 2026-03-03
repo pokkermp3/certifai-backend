@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CertifAI — Verification Portal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg: #f8fafc; --surface: #fff; --border: #e2e8f0; --border2: #cbd5e1;
+  --ink: #0f172a; --muted: #64748b; --accent: #0d9488; --accent2: #0891b2;
+  --ok: #059669; --err: #dc2626;
+  --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); font-family: var(--sans); color: var(--ink); min-height: 100vh; }
+
+header {
+  background: var(--ink);
+  padding: 0;
+  border-bottom: 3px solid var(--accent);
+}
+.hinner {
+  max-width: 920px; margin: 0 auto; padding: 18px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand { font-family: var(--mono); font-size: 20px; font-weight: 500; color: #fff; }
+.brand span { color: var(--accent); }
+.portal-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #64748b; }
+
+.wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.subtitle { color: var(--muted); font-size: 14px; margin-bottom: 36px; line-height: 1.6; }
+
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+@media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.card-title {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+}
+
+.drop {
+  border: 2px dashed var(--border2); border-radius: 8px;
+  padding: 28px 16px; text-align: center; cursor: pointer;
+  transition: all .15s;
+}
+.drop:hover, .drop.drag { border-color: var(--accent); background: #f0fdfa; }
+.drop-icon { font-size: 32px; margin-bottom: 10px; }
+.drop-text { font-size: 13px; color: var(--muted); }
+.drop-hint { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+
+.inp {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 10px 14px; font-family: var(--mono);
+  font-size: 12px; color: var(--ink); outline: none;
+  transition: border .15s; margin-bottom: 10px;
+}
+.inp:focus { border-color: var(--accent); }
+.inp::placeholder { color: #94a3b8; }
+
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; width: 100%; padding: 11px 20px; border-radius: 6px;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  cursor: pointer; border: none; transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #0f766e; }
+.btn-secondary {
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent); margin-top: 8px;
+}
+.btn-secondary:hover { background: #f0fdfa; }
+
+/* Result panel */
+.result { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.result.show { display: block; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+.result-banner { padding: 18px 24px; display: flex; align-items: center; gap: 14px; }
+.result-banner.ok   { background: #ecfdf5; border-bottom: 1px solid #a7f3d0; }
+.result-banner.fail { background: #fef2f2; border-bottom: 1px solid #fecaca; }
+.result-icon { font-size: 32px; }
+.result-title { font-size: 20px; font-weight: 600; }
+.result-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.result-body { padding: 24px; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+.info-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.info-row:last-child { border-bottom: none; }
+.info-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.info-value { font-size: 13px; font-weight: 500; }
+
+.hash-section { margin: 16px 0; }
+.hash-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 5px; }
+.hash-value {
+  background: #0f172a; border: 1px solid #00d4aa; border-radius: 6px;
+  padding: 10px 14px; font-family: var(--mono); font-size: 11px;
+  color: #00d4aa; word-break: break-all; cursor: pointer;
+  transition: opacity .15s;
+}
+.hash-value:hover { opacity: .85; }
+
+.match-box {
+  border-radius: 6px; padding: 11px 14px; margin: 16px 0;
+  font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+}
+.match-ok   { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.match-fail { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.action-btn {
+  padding: 9px 18px; border-radius: 6px; font-family: var(--mono);
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  border: none; transition: all .15s;
+}
+.btn-pdf  { background: var(--accent); color: #fff; }
+.btn-pdf:hover { background: #0f766e; }
+.btn-file { background: var(--ink); color: #fff; }
+.btn-file:hover { opacity: .85; }
+.btn-copy { background: var(--bg); color: var(--ink); border: 1px solid var(--border2); }
+.btn-copy:hover { border-color: var(--ink); }
+
+.gps-link { color: var(--accent); font-size: 12px; text-decoration: none; }
+.gps-link:hover { text-decoration: underline; }
+
+.loading { text-align: center; padding: 48px; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.divider { text-align: center; color: var(--muted); font-size: 11px; margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hinner">
+    <div class="brand">Certif<span>AI</span></div>
+    <div class="portal-label">Insurance Verification Portal</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1>Verify File Certificate</h1>
+  <p class="subtitle">
+    Upload the original file to verify its integrity, or enter a Certificate ID or SHA-256 hash directly.
+  </p>
+
+  <div class="cards">
+
+    <!-- Verify by file -->
+    <div class="card">
+      <div class="card-title">Verify by Original File</div>
+      <div class="drop" id="dropZone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="onDragOver(event)"
+        ondragleave="onDragLeave(event)"
+        ondrop="onDrop(event)">
+        <div class="drop-icon">📎</div>
+        <div class="drop-text">Drop the original photo or video here</div>
+        <div class="drop-hint">We compute its hash and check our records</div>
+      </div>
+      <input type="file" id="fileInput" style="display:none" onchange="verifyByFile(event)">
+    </div>
+
+    <!-- Verify by ID or hash -->
+    <div class="card">
+      <div class="card-title">Verify by ID or Hash</div>
+
+      <input
+        class="inp" id="idInput"
+        placeholder="Certificate ID (UUID)..."
+        onkeydown="if(event.key==='Enter') verifyByID()"
+      >
+      <button class="btn btn-primary" onclick="verifyByID()">
+        Check Certificate ID
+      </button>
+
+      <div class="divider">— or —</div>
+
+      <input
+        class="inp" id="hashInput"
+        placeholder="SHA-256 hash (64 hex characters)..."
+        onkeydown="if(event.key==='Enter') verifyByHash()"
+      >
+      <button class="btn btn-secondary" onclick="verifyByHash()">
+        Check Hash
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+const API = '';
+
+// ── Drag and drop ────────────────────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) doVerifyFile(f);
+}
+function verifyByFile(e) {
+  const f = e.target.files[0];
+  if (f) doVerifyFile(f);
+  e.target.value = '';
+}
+
+// ── Verify actions ────────────────────────────────────────────────────────────
+async function doVerifyFile(file) {
+  showLoading('Computing hash and checking records...');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(API + '/api/v1/verify/file', { method: 'POST', body: fd });
+    const d = await r.json();
+    renderResult(d);
+  } catch(e) { showError(e.message); }
+}
+
+async function verifyByID() {
+  const id = document.getElementById('idInput').value.trim();
+  if (!id) return;
+  showLoading('Looking up certificate...');
+  try {
+    const r = await fetch(API + '/api/v1/certificates/' + encodeURIComponent(id));
+    const d = await r.json();
+    renderResult(d);
+  } catch(e) { showError(e.message); }
+}
+
+async function verifyByHash() {
+  const hash = document.getElementById('hashInput').value.trim();
+  if (!hash) return;
+  showLoading('Checking hash...');
+  try {
+    const r = await fetch(API + '/api/v1/verify/hash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hash }),
+    });
+    const d = await r.json();
+    renderResult(d);
+  } catch(e) { showError(e.message); }
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  const el = document.getElementById('result');
+  el.className = 'result show';
+  el.innerHTML = `<div class="loading">${esc(msg)}</div>`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('result');
+  el.className = 'result show';
+  el.innerHTML = `
+    <div class="result-banner fail">
+      <div class="result-icon">⚠️</div>
+      <div>
+        <div class="result-title" style="color:#dc2626">Error</div>
+        <div class="result-sub">${esc(msg)}</div>
+      </div>
+    </div>`;
+}
+
+function renderResult(data) {
+  const el = document.getElementById('result');
+  el.className = 'result show';
+
+  if (!data.verified) {
+    el.innerHTML = `
+      <div class="result-banner fail">
+        <div class="result-icon">✗</div>
+        <div>
+          <div class="result-title" style="color:#dc2626">Not Certified</div>
+          <div class="result-sub">${esc(data.message || 'No certificate found.')}</div>
+        </div>
+      </div>
+      <div class="result-body">
+        <p style="color:var(--muted);font-size:13px;line-height:1.6">
+          This file has not been certified through CertifAI, or it may have been
+          modified after certification. The original certified file will produce
+          a different hash.
+        </p>
+      </div>`;
+    return;
+  }
+
+  const c = data.certificate;
+  const ok = c.hash_verified;
+
+  el.innerHTML = `
+    <div class="result-banner ok">
+      <div class="result-icon">✓</div>
+      <div>
+        <div class="result-title" style="color:#065f46">Certificate Verified</div>
+        <div class="result-sub">${esc(data.message)}</div>
+      </div>
+    </div>
+    <div class="result-body">
+
+      <div class="match-box ${ok ? 'match-ok' : 'match-fail'}">
+        ${ok
+          ? '✓  Device hash matches server hash — file integrity confirmed'
+          : '✗  Hash mismatch — file may have been altered after capture'}
+      </div>
+
+      <div class="hash-section">
+        <div class="hash-label">SHA-256 Hash (click to copy)</div>
+        <div class="hash-value" onclick="copyText('${c.device_hash}', this)">
+          ${c.device_hash}
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-row">
+          <div class="info-label">Certificate ID</div>
+          <div class="info-value" style="font-family:var(--mono);font-size:11px">${c.id}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">File Name</div>
+          <div class="info-value">${esc(c.file_name)}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Captured At</div>
+          <div class="info-value">${new Date(c.captured_at).toLocaleString()}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">Certified At</div>
+          <div class="info-value">${c.certified_at ? new Date(c.certified_at).toLocaleString() : '—'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">File Type</div>
+          <div class="info-value">${esc(c.file_type)}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">File Size</div>
+          <div class="info-value">${fmtSize(c.file_size)}</div>
+        </div>
+        ${c.device_model ? `
+        <div class="info-row">
+          <div class="info-label">Device</div>
+          <div class="info-value">${esc(c.device_model)}</div>
+        </div>` : ''}
+        ${c.case_id ? `
+        <div class="info-row">
+          <div class="info-label">Case / Claim ID</div>
+          <div class="info-value">${esc(c.case_id)}</div>
+        </div>` : ''}
+        ${c.gps_lat != null ? `
+        <div class="info-row">
+          <div class="info-label">GPS Location</div>
+          <div class="info-value">
+            <a class="gps-link" href="${esc(c.gps_maps_url)}" target="_blank">
+              📍 ${c.gps_lat.toFixed(5)}, ${c.gps_lon.toFixed(5)}
+            </a>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <div class="actions">
+        ${c.pdf_url ? `<button class="action-btn btn-pdf" onclick="window.open('${c.pdf_url}')">⬇ Download PDF Certificate</button>` : ''}
+        ${c.file_url ? `<button class="action-btn btn-file" onclick="window.open('${c.file_url}')">🖼 View Original File</button>` : ''}
+        <button class="action-btn btn-copy" onclick="copyText('${c.id}', this)">Copy Certificate ID</button>
+      </div>
+    </div>`;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = 'Copied!';
+    setTimeout(() => el.textContent = orig, 1200);
+  });
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function fmtSize(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
