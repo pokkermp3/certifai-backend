@@ -184,6 +184,8 @@ class Certificate:
         certified_at: Optional[datetime] = None,
         storage_path: str = "",
         pdf_path: str = "",
+        policyholder_name: str = "",
+        policyholder_dni: str = "",
     ):
         # All attributes are private — accessed only via properties
         self._id           = id
@@ -198,6 +200,8 @@ class Certificate:
         self._certified_at = certified_at
         self._storage_path = storage_path
         self._pdf_path     = pdf_path
+        self._policyholder_name = policyholder_name
+        self._policyholder_dni  = policyholder_dni
 
     # ── Factory methods ───────────────────────────────────────────────────────
     # These are the ONLY intended ways to create a Certificate.
@@ -214,6 +218,8 @@ class Certificate:
         gps: Optional[GPSCoordinates],
         device: DeviceInfo,
         captured_at: datetime,
+        policyholder_name: str = "",
+        policyholder_dni: str = "",
     ) -> "Certificate":
         """
         Create a brand-new certificate in PENDING_UPLOAD state.
@@ -228,6 +234,8 @@ class Certificate:
             gps=gps,
             device=device,
             captured_at=captured_at,
+            policyholder_name=policyholder_name,
+            policyholder_dni=policyholder_dni,
         )
 
     @classmethod
@@ -245,6 +253,8 @@ class Certificate:
         certified_at: Optional[datetime] = None,
         storage_path: str = "",
         pdf_path: str = "",
+        policyholder_name: str = "",
+        policyholder_dni: str = "",
     ) -> "Certificate":
         """
         Rebuild a Certificate from persisted state (e.g. from a database row).
@@ -265,6 +275,8 @@ class Certificate:
             certified_at=certified_at,
             storage_path=storage_path,
             pdf_path=pdf_path,
+            policyholder_name=policyholder_name,
+            policyholder_dni=policyholder_dni,
         )
 
     # ── Business methods ──────────────────────────────────────────────────────
@@ -384,3 +396,10 @@ class Certificate:
             f"status={self._status}, "
             f"file={self._file_info.name})"
         )
+    @property
+    def policyholder_name(self) -> str:
+        return self._policyholder_name
+
+    @property
+    def policyholder_dni(self) -> str:
+        return self._policyholder_dni

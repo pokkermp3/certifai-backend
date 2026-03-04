@@ -57,3 +57,14 @@ class ICertificateRepository(ABC):
     async def exists_by_hash(self, hash: Hash) -> bool:
         """Check for duplicate without fetching the full record."""
         ...
+    @abstractmethod
+    async def find_clients(self) -> list[dict]:
+        """
+        Return deduplicated policyholders with at least one certificate.
+        Each entry: { dni, name, certificate_count, last_submission }
+        """
+        ...
+
+    @abstractmethod
+    async def find_by_dni(self, dni: str) -> list[Certificate]:
+        """Return all certificates for a given DNI, newest first."""

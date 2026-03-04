@@ -18,6 +18,7 @@ from adapters.http.routes import create_router
 from adapters.http.verifier import VERIFIER_HTML
 from adapters.pdf.weasyprint_generator import WeasyprintGenerator
 from adapters.persistence.sqlite_repo import SQLiteCertificateRepository
+from adapters.http.dashboard import dashboard_router
 from adapters.storage.local_storage import LocalFileStorage
 from application import (
     CertifyFileUseCase,
@@ -73,7 +74,9 @@ class Container:
             download_uc=self.download_uc,
             hasher=hasher,
             verifier_html=VERIFIER_HTML,
+            repo=repo,
         )
+        self.dashboard_router = dashboard_router
 
     async def init(self) -> None:
         """Initialise the database schema. Call once at application startup."""

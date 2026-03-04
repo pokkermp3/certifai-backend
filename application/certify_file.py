@@ -19,7 +19,7 @@ What this file does NOT know about:
   - WeasyPrint or any concrete adapter class
 """
 import io
-
+import asyncio
 from domain import (
     Certificate,
     CertificateID,
@@ -111,6 +111,8 @@ class CertifyFileUseCase(ICertifyUseCase):
                 app_version=cmd.app_version,
             ),
             captured_at=cmd.captured_at,
+            policyholder_name=cmd.policyholder_name,
+            policyholder_dni=cmd.policyholder_dni,
         )
 
         await self._repo.save(certificate)
@@ -147,14 +149,11 @@ class CertifyFileUseCase(ICertifyUseCase):
         # Business rule executes inside the domain entity — not here
         certificate.certify(server_hash, storage_path)
 
-        # Generate PDF — non-fatal if it fails
-        try:
-            pdf_path = await self._pdf_gen.generate(certificate)
-            certificate.set_pdf_path(pdf_path)
-        except Exception:
-            pass
-
+        
         await self._repo.update(certificate)
+
+        # Generate PDF in background — don't block the response
+        asyncio.create_task(self._generate_pdf_background(certificate))
 
         return UploadFileResult(
             certificate_id=str(certificate.id),
@@ -164,4 +163,14 @@ class CertifyFileUseCase(ICertifyUseCase):
             status=certificate.status,
             pdf_download_url=f"/api/v1/download/pdf/{certificate.id}",
             file_download_url=f"/api/v1/download/file/{certificate.id}",
+
+            
         )
+    
+    async def _generate_pdf_background(self, certificate: Certificate) -> None:
+        try:
+            pdf_path = await self._pdf_gen.generate(certificate)
+            certificate.set_pdf_path(pdf_path)
+            await self._repo.update(certificate)
+        except Exception:
+            pass

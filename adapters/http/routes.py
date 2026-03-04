@@ -10,7 +10,7 @@ Each concern lives in its own file:
   routes_download.py  — file + PDF downloads
 """
 from fastapi import APIRouter
-
+from adapters.http.routes_clients import create_clients_router
 from ports.inbound import (
     ICertifyUseCase,
     IVerifyUseCase,
@@ -30,6 +30,7 @@ def create_router(
     download_uc: IDownloadUseCase,
     hasher: IHasher,
     verifier_html: str,
+    repo,
 ) -> APIRouter:
     """
     Facade pattern: assembles sub-routers into one router.
@@ -39,4 +40,5 @@ def create_router(
     router.include_router(create_certify_router(certify_uc))
     router.include_router(create_verify_router(verify_uc, list_uc, hasher, verifier_html))
     router.include_router(create_download_router(download_uc))
+    router.include_router(create_clients_router(repo))
     return router

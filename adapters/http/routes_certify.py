@@ -34,6 +34,8 @@ class RegisterCaptureRequest(BaseModel):
     device_model: str = ""
     os_version: str = ""
     app_version: str = ""
+    policyholder_name: str = ""
+    policyholder_dni: str = ""
 
     @field_validator("device_hash")
     @classmethod
@@ -77,6 +79,8 @@ def create_certify_router(certify_uc: ICertifyUseCase) -> APIRouter:
             device_model=body.device_model,
             os_version=body.os_version,
             app_version=body.app_version,
+            policyholder_name=body.policyholder_name,
+            policyholder_dni=body.policyholder_dni,
         )
 
         try:

@@ -51,7 +51,9 @@ class SQLiteCertificateRepository(ICertificateRepository):
                     gps_json      TEXT    NOT NULL DEFAULT 'null',
                     device_json   TEXT    NOT NULL DEFAULT '{}',
                     storage_path  TEXT    NOT NULL DEFAULT '',
-                    pdf_path      TEXT    NOT NULL DEFAULT ''
+                    pdf_path      TEXT    NOT NULL DEFAULT '',
+                    policyholder_name  TEXT NOT NULL DEFAULT '',
+                    policyholder_dni   TEXT NOT NULL DEFAULT ''
                 )
             """)
             await db.execute(
@@ -67,7 +69,18 @@ class SQLiteCertificateRepository(ICertificateRepository):
                 "ON certificates(captured_at DESC)"
             )
             await db.commit()
-
+        async with aiosqlite.connect(self._db_path) as db:
+            for col, definition in [
+                ("policyholder_name", "TEXT NOT NULL DEFAULT ''"),
+                ("policyholder_dni",  "TEXT NOT NULL DEFAULT ''"),
+            ]:
+                try:
+                    await db.execute(
+                        f"ALTER TABLE certificates ADD COLUMN {col} {definition}"
+                    )
+                except Exception:
+                    pass  # column already exists
+            await db.commit()
     # ── ICertificateRepository ────────────────────────────────────────────────
 
     async def save(self, cert: Certificate) -> None:
@@ -78,8 +91,9 @@ class SQLiteCertificateRepository(ICertificateRepository):
                         id, case_id, file_name, file_size, mime_type,
                         device_hash, server_hash, status, captured_at,
                         certified_at, gps_json, device_json,
-                        storage_path, pdf_path
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        storage_path, pdf_path,
+                        policyholder_name, policyholder_dni
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, self._to_row(cert))
                 await db.commit()
             except aiosqlite.IntegrityError as e:
@@ -193,6 +207,8 @@ class SQLiteCertificateRepository(ICertificateRepository):
             device_data,
             cert.storage_path,
             cert.pdf_path,
+            cert.policyholder_name,
+            cert.policyholder_dni,
         )
 
     def _from_row(self, row: aiosqlite.Row) -> Certificate:
@@ -237,7 +253,39 @@ class SQLiteCertificateRepository(ICertificateRepository):
             status=CertificateStatus(row["status"]),
             storage_path=row["storage_path"],
             pdf_path=row["pdf_path"],
+            policyholder_name=row["policyholder_name"],
+            policyholder_dni=row["policyholder_dni"],
         )
+    async def find_clients(self) -> list[dict]:
+        """Unique policyholders with at least one certificate."""
+        async with aiosqlite.connect(self._db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("""
+                SELECT
+                    policyholder_dni   AS dni,
+                    policyholder_name  AS name,
+                    COUNT(*)           AS certificate_count,
+                    MAX(captured_at)   AS last_submission
+                FROM certificates
+                WHERE policyholder_dni != ''
+                GROUP BY policyholder_dni
+                ORDER BY last_submission DESC
+            """) as cursor:
+                rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+    async def find_by_dni(self, dni: str) -> list[Certificate]:
+        """All certificates for a given policyholder DNI, newest first."""
+        async with aiosqlite.connect(self._db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT * FROM certificates "
+                "WHERE policyholder_dni = ? "
+                "ORDER BY captured_at DESC",
+                (dni,)
+            ) as cursor:
+                rows = await cursor.fetchall()
+        return [self._from_row(r) for r in rows]
 
 
 # ── Date helpers ──────────────────────────────────────────────────────────────

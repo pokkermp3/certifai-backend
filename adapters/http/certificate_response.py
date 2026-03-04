@@ -32,6 +32,8 @@ class CertificateResponse(BaseModel):
     app_version: str
     pdf_url: Optional[str]
     file_url: Optional[str]
+    policyholder_name: str
+    policyholder_dni: str
 
     @classmethod
     def from_domain(cls, cert: Certificate) -> "CertificateResponse":
@@ -57,4 +59,6 @@ class CertificateResponse(BaseModel):
             app_version=cert.device.app_version,
             pdf_url=f"/api/v1/download/pdf/{cert.id}" if cert.has_pdf() else None,
             file_url=f"/api/v1/download/file/{cert.id}" if cert.storage_path else None,
+            policyholder_name=cert.policyholder_name,
+            policyholder_dni=cert.policyholder_dni,
         )

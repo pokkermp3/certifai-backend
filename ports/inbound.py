@@ -45,7 +45,8 @@ class RegisterCaptureCommand:
     device_model: str
     os_version: str
     app_version: str
-
+    policyholder_name: str = ""  
+    policyholder_dni: str = ""    
 
 @dataclass(frozen=True)
 class RegisterCaptureResult:

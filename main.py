@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
  Pattern:   Hexagonal Architecture + SOLID
  API:       http://{settings.host}:{settings.port}/api/v1
  Verifier:  http://{settings.host}:{settings.port}/verify
+ Dashboard: http://{settings.host}:{settings.port}/dashboard
  Docs:      http://{settings.host}:{settings.port}/docs
  ─────────────────────────────────────────────────────────
     """)
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
 
     # Register all routes
     app.include_router(container.router)
+    app.include_router(container.dashboard_router)
 
     return app
 
