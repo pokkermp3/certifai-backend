@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: certifai-backend
+    runtime: docker
+    plan: free
+    envVars:
+      - key: CERTIFAI_DATABASE_URL
+        sync: false              # set manually in Render dashboard (contains password)
+      - key: CERTIFAI_R2_BUCKET
+        value: certifai
+      - key: CERTIFAI_R2_ENDPOINT
+        sync: false              # set manually in Render dashboard
+      - key: CERTIFAI_R2_ACCESS_KEY_ID
+        sync: false              # set manually in Render dashboard
+      - key: CERTIFAI_R2_SECRET_ACCESS_KEY
+        sync: false              # set manually in Render dashboard
+      - key: CERTIFAI_AGENT_PASSWORD
+        sync: false              # set manually in Render dashboard
+      - key: CERTIFAI_DEBUG
+        value: "false"

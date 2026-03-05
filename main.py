@@ -33,7 +33,8 @@ async def lifespan(app: FastAPI):
  ╚██████╗███████╗██║  ██║   ██║   ██║██║     ██║  ██║██║
   ╚═════╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝
 
- Stack:     Python + FastAPI + SQLite
+ Stack:     Python + FastAPI + {"PostgreSQL" if settings.database_url else "SQLite"}
+ Storage:   {"Cloudflare R2" if settings.r2_bucket else "Local filesystem"}
  Pattern:   Hexagonal Architecture + SOLID
  API:       http://{settings.host}:{settings.port}/api/v1
  Verifier:  http://{settings.host}:{settings.port}/verify
@@ -42,7 +43,8 @@ async def lifespan(app: FastAPI):
  ─────────────────────────────────────────────────────────
     """)
     yield
-    # Shutdown — add cleanup here if needed
+    # Shutdown — close DB pool to avoid stale connections on Neon
+    await container.shutdown()
 
 
 def create_app() -> FastAPI:
@@ -59,7 +61,6 @@ def create_app() -> FastAPI:
 
     # Store container in app state so routes can access shared services
     app.state.container = container
-#    app.state.hasher    = container.hasher
 
     # CORS — allows the mobile app and verifier to call the API
     origins = (
