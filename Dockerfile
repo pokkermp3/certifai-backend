@@ -1,17 +1,16 @@
-# ── Build stage ───────────────────────────────────────────────────────────────
 # Using slim to keep image small — critical for Render free tier cold starts
 FROM python:3.12-slim
 
-# WeasyPrint system dependencies — required for PDF generation
-# libpangocairo pulls in libcairo2, libfontconfig1, libharfbuzz automatically
-# fonts-liberation provides Latin fonts — without this WeasyPrint renders blank/corrupt text
+# WeasyPrint system dependencies for PDF generation
+# Verified package names for Debian bookworm (python:3.12-slim base)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpango-1.0-0 \
         libpangocairo-1.0-0 \
-        libgdk-pixbuf2.0-0 \
+        libgdk-pixbuf-2.0-0 \
         libffi-dev \
         shared-mime-info \
         fontconfig \
+        fonts-dejavu-core \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
