@@ -168,9 +168,30 @@ class CertifyFileUseCase(ICertifyUseCase):
         )
     
     async def _generate_pdf_background(self, certificate: Certificate) -> None:
+        import os
+        local_path = None
         try:
-            pdf_path = await self._pdf_gen.generate(certificate)
-            certificate.set_pdf_path(pdf_path)
+            # 1. Generate PDF to local filesystem
+            local_path = await self._pdf_gen.generate(certificate)
+
+            # 2. Upload PDF to R2 (or local storage) so download_uc can find it
+            with open(local_path, "rb") as f:
+                r2_key = await self._storage.store(
+                    file_id=f"pdf_{certificate.id}",
+                    data=f,
+                    mime_type="application/pdf",
+                )
+
+            # 3. Save R2 key (not local path) to DB
+            certificate.set_pdf_path(r2_key)
             await self._repo.update(certificate)
+
         except Exception:
             pass
+        finally:
+            # 4. Clean up local temp file regardless of outcome
+            if local_path:
+                try:
+                    os.unlink(local_path)
+                except OSError:
+                    pass
